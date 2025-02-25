@@ -1,14 +1,14 @@
 <?php include('header.php'); ?>
 
-<div class="p-4">
+<div class="w-full p-4">
   <h2 class="text-2xl font-bold mb-4">Admin Dashboard</h2>
   
   <!-- Ranking Management -->
-  <div class="mb-6">
+  <div class="mb-6 flex flex-col gap-4">
     <h3 class="text-xl font-semibold mb-2">Ranking Management</h3>
     
     <!-- Lecturer Ranking Form -->
-    <form action="/backend/ranking.php" method="POST" class="mb-4">
+    <form class="max-w-xl" action="/backend/ranking.php" method="POST" class="mb-4">
       <h4 class="font-semibold">Lecturer Ranking</h4>
       <div class="mb-2">
         <input type="text" name="lecturer_name" placeholder="Lecturer Name" class="border p-2 rounded w-full" required>
@@ -20,7 +20,7 @@
     </form>
     
     <!-- Student Ranking Form -->
-    <form action="/backend/ranking.php" method="POST">
+    <form class="max-w-xl" action="/backend/ranking.php" method="POST">
       <h4 class="font-semibold">Student Ranking</h4>
       <div class="mb-2">
         <input type="text" name="student_name" placeholder="Student Name" class="border p-2 rounded w-full" required>

@@ -1,6 +1,6 @@
 <?php include('header.php'); ?>
 
-<div class="p-4">
+<div class="w-full p-4">
   <h2 class="text-2xl font-bold mb-4">Lecturer Dashboard</h2>
   
   <div>
