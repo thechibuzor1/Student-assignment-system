@@ -32,7 +32,7 @@ The Department of Computer Science uses a ranking-based system to assign student
 1. **Clone the Repository:**
 
 ```bash
-git clone https://your-repo-url.git
+git clone https://github.com/thechibuzor1/Student-assignment-system.git
 cd project-assignment-system
 ```
 
