@@ -14,6 +14,18 @@ $query = "SELECT supervisorID FROM student WHERE matricNumber = '$matric_no'";
 $result = mysqli_query($connection, $query);
 $row = mysqli_fetch_assoc($result);
 $supervisorID = $row['supervisorID'] ?? null;
+$lecturerName = null;
+
+if ($supervisorID) {
+    // Fetch lecturer name based on supervisorID
+    $lecturerQuery = "SELECT name FROM lecturer WHERE id = '$supervisorID'";
+    $lecturerResult = mysqli_query($connection, $lecturerQuery);
+    if ($lecturerRow = mysqli_fetch_assoc($lecturerResult)) {
+        $lecturerName = $lecturerRow['name'];
+    } else {
+        $supervisorID = null; // If lecturer doesn't exist, reset supervisorID
+    }
+}
 ?>
 
 <?php include('header.php'); ?>
@@ -24,8 +36,8 @@ $supervisorID = $row['supervisorID'] ?? null;
   <div>
     <h3 class="text-xl font-semibold mb-2">Your Assigned Supervisor</h3>
     <p class="bg-white p-4 rounded shadow">
-      <?php if ($supervisorID): ?>
-        Supervisor ID: <strong><?php echo $supervisorID; ?></strong>
+      <?php if ($supervisorID && $lecturerName): ?>
+        Supervisor: <strong><?php echo htmlspecialchars($lecturerName); ?></strong>
       <?php else: ?>
         <span class="text-red-600">You have not been assigned a supervisor yet.</span>
       <?php endif; ?>

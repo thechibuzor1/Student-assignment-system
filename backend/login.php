@@ -45,6 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['matric_no'] = $row['matricNumber'];
                     header("Location: ../views/student.php"); // Redirect student
                 } else if ($role === "lecturer") {
+                    $_SESSION['lecturer_id'] = $row['id']; // FIX: Store lecturer's ID
                     header("Location: ../views/lecturer.php"); // Redirect lecturer
                 } else if ($role === "admin") {
                     header("Location: ../views/dashboard.php"); // Redirect admin
