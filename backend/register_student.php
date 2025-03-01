@@ -41,18 +41,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (mysqli_query($connection, $query)) {
 
-        // Clear any existing session (for student, lecturer, or admin)
-        session_unset(); 
-        session_destroy(); 
-        session_start(); 
+        // Reset session properly
+        $_SESSION = [];
+        session_regenerate_id(true);
 
-        // Store session
+        // Set student session
+        $_SESSION['user_id'] = $matric_no; // Ensuring consistent session key
         $_SESSION['matric_no'] = $matric_no;
         $_SESSION['name'] = $name;
         $_SESSION['email'] = $email;
+        $_SESSION['role'] = "student";
 
         header('Location: ../views/student.php');
         exit();
+
     } else {
         echo "Error: " . mysqli_error($connection);
     }

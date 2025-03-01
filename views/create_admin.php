@@ -1,7 +1,6 @@
 <?php
 include('header.php');
 include_once('../backend/config.php');
-session_start();
 
 // Ensure only an admin can access this page
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {

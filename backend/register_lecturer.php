@@ -41,27 +41,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Insert lecturer into the database using prepared statements
     $insert_query = "INSERT INTO lecturer (name, email, password) VALUES (?, ?, ?)";
-
+    
     if ($stmt = mysqli_prepare($connection, $insert_query)) {
         mysqli_stmt_bind_param($stmt, "sss", $name, $email, $hashed_password);
         if (mysqli_stmt_execute($stmt)) {
-
-            // Clear any existing session (for student, lecturer, or admin)
-            session_unset();
-            session_destroy();
-            session_start();
-
+    
+            // Reset session properly
+            $_SESSION = [];
+            session_regenerate_id(true);
+    
             // Set new lecturer session
-            $_SESSION['lecturer_id'] = mysqli_insert_id($connection); // Store lecturer ID
-            $_SESSION['lecturer_name'] = $name;
-            $_SESSION['lecturer_email'] = $email;
-
-            // Redirect to lecturer dashboard
+            $_SESSION['lecturer_id'] = mysqli_insert_id($connection);
+            $_SESSION['user_id'] = mysqli_insert_id($connection);
+            $_SESSION['name'] = $name;
+            $_SESSION['email'] = $email;
+            $_SESSION['role'] = "lecturer"; // Consistent role assignment
+    
             header('Location: ../views/lecturer.php');
             exit();
         } else {
             echo "Error: " . mysqli_stmt_error($stmt);
         }
+    
         mysqli_stmt_close($stmt);
     } else {
         echo "Database query error!";

@@ -1,6 +1,6 @@
 <?php 
+include('header.php'); 
 include('../backend/config.php'); 
-session_start();
 
 // Check if lecturer is logged in
 if (!isset($_SESSION['lecturer_id'])) {
@@ -22,7 +22,6 @@ if ($stmt = mysqli_prepare($connection, $query)) {
 }
 ?>
 
-<?php include('header.php'); ?>
 
 <div class="w-full p-4">
   <h2 class="text-2xl font-bold mb-4">Lecturer Dashboard</h2>
@@ -36,7 +35,7 @@ if ($stmt = mysqli_prepare($connection, $query)) {
           <tr class="bg-gray-200">
             <th class="py-2 px-4 border-b">Student Name</th>
             <th class="py-2 px-4 border-b">Matric Number</th>
-            <th class="py-2 px-4 border-b">CGPA</th>
+             
           </tr>
         </thead>
         <tbody>
@@ -44,7 +43,6 @@ if ($stmt = mysqli_prepare($connection, $query)) {
             <tr>
               <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($row['name']); ?></td>
               <td class="py-2 px-4 border-b"><?php echo htmlspecialchars($row['matricNumber']); ?></td>
-              <td class="py-2 px-4 border-b"><?php echo number_format($row['cgpa'], 2); ?></td>
             </tr>
           <?php endwhile; ?>
         </tbody>

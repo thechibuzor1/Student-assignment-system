@@ -30,10 +30,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($row = mysqli_fetch_assoc($result)) {
             // Verify the password
             if (password_verify($password, $row['password'])) {
-                // Clear any existing session (force logout of any logged-in user)
-                session_unset();
-                session_destroy();
-                session_start();
+                // Reset session properly
+                $_SESSION = [];
+                session_regenerate_id(true);
 
                 // Set new session variables
                 $_SESSION['user_id'] = $row['id'];

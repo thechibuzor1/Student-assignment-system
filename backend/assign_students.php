@@ -39,5 +39,5 @@ while ($student = mysqli_fetch_assoc($students)) {
     $index++; // Move to the next lecturer in a cyclic manner
 }
 
-echo "Assignment completed successfully.";
+echo "Assignment completed";
 ?>

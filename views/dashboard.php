@@ -1,7 +1,6 @@
 <?php
 include('header.php');
 include_once('../backend/config.php');
-session_start();
 
 // Ensure only admin can access
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
@@ -58,6 +57,7 @@ function runAssignmentAlgorithm() {
 
 ?>
 <div class="w-full p-6">
+
     <div class="flex mb-6 justify-between">
     <h2 class="text-3xl text-center md:text-left">Admin Dashboard</h2>
     <!-- Create Admin Button -->
@@ -70,6 +70,41 @@ function runAssignmentAlgorithm() {
     </form>
 
 </div>
+<?php if (isset($_GET['success'])): ?>
+    <p class="text-green-600"><?= htmlspecialchars($_GET['success']) ?></p>
+<?php endif; ?>
+
+
+<!-- Admin Management -->
+<div class="mb-6 overflow-x-auto">
+    <h3 class="text-xl font-semibold mb-4">Admin Management</h3>
+    <table class="w-full border border-gray-300 rounded-lg text-sm md:text-base">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border p-2">id</th>
+                <th class="border p-2">Email</th>
+                <th class="border p-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            $admins = mysqli_query($connection, "SELECT * FROM admin");
+            while ($admin = mysqli_fetch_assoc($admins)) { ?>
+                <tr class="text-center">
+                    <td class="border p-2"> <?= htmlspecialchars($admin['id']) ?> </td>
+                    <td class="border p-2"> <?= htmlspecialchars($admin['email']) ?> </td>
+                    <td class="border p-2">
+                        <form action="../backend/delete_admin.php" method="POST">
+                            <input type="hidden" name="email" value="<?= $admin['email'] ?>">
+                            <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php } ?>
+        </tbody>
+    </table>
+</div>
+
 
 
     <!-- Lecturer Management -->

@@ -1,6 +1,8 @@
-<?php 
-include('../backend/config.php'); 
-session_start(); // Start session
+<?php  
+    include('header.php');
+    include('../backend/config.php');
+     
+    
 
 // Check if student is logged in
 if (!isset($_SESSION['matric_no'])) {
@@ -28,7 +30,6 @@ if ($supervisorID) {
 }
 ?>
 
-<?php include('header.php'); ?>
 
 <div class="p-4">
   <h2 class="text-2xl font-bold mb-4">Student Dashboard</h2>

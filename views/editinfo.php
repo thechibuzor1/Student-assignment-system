@@ -1,7 +1,6 @@
 <?php
 include('header.php');
 include_once('../backend/config.php');
-session_start();
 
 if (!isset($_SESSION['role']) || !isset($_SESSION['email'])) {
     header("Location: ../index.php");
