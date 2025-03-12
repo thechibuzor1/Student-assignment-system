@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (mysqli_stmt_execute($stmt)) {
     
             // Reset session properly
-            $_SESSION = [];
+            session_unset();
             session_regenerate_id(true);
     
             // Set new lecturer session

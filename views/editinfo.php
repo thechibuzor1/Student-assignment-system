@@ -34,25 +34,35 @@ if (!$user) {
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     try {
         $newEmail = mysqli_real_escape_string($connection, trim($_POST['email']));
-        $newPassword = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : null;
+        $newPassword = !empty($_POST['password']) ? trim($_POST['password']) : null;
+        $confirmPassword = !empty($_POST['confirm_password']) ? trim($_POST['confirm_password']) : null;
+
+        // Password validation
+        if ($newPassword) {
+            if (strlen($newPassword) < 6) {
+                throw new Exception("Password must be at least 6 characters long.");
+            }
+            if ($newPassword !== $confirmPassword) {
+                throw new Exception("Passwords do not match.");
+            }
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        }
 
         // Check if the new email already exists in students, lecturers, or admins table
         $checkQuery = "SELECT email FROM student WHERE email = ? 
         UNION 
-        SELECT email FROM lecturer WHERE email = ?
-        UNION
+        SELECT email FROM lecturer WHERE email = ? 
+        UNION 
         SELECT email FROM admin WHERE email = ?";
-
+        
         $checkStmt = mysqli_prepare($connection, $checkQuery);
         mysqli_stmt_bind_param($checkStmt, "sss", $newEmail, $newEmail, $newEmail);
         mysqli_stmt_execute($checkStmt);
         $checkResult = mysqli_stmt_get_result($checkStmt);
 
-        // If the new email exists and it's not the user's current email, reject the update
         if (mysqli_num_rows($checkResult) > 0 && $newEmail !== $email) {
-        throw new Exception("Email already exists. Please use a different email.");
+            throw new Exception("Email already exists. Please use a different email.");
         }
-
 
         if ($role === "student") {
             $newName = mysqli_real_escape_string($connection, trim($_POST['name']));
@@ -60,14 +70,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $newLevel = mysqli_real_escape_string($connection, $_POST['level']);
             $newCGPA = mysqli_real_escape_string($connection, $_POST['cgpa']);
 
+            if (!is_numeric($newCGPA) || $newCGPA < 0.0 || $newCGPA > 5.0) {
+                throw new Exception("Invalid CGPA. It must be between 0.0 and 5.0.");
+            }
+
+            $matricCheckQuery = "SELECT matricNumber FROM student WHERE matricNumber = ? AND email != ?";
+            $matricCheckStmt = mysqli_prepare($connection, $matricCheckQuery);
+            mysqli_stmt_bind_param($matricCheckStmt, "ss", $newMatric, $email);
+            mysqli_stmt_execute($matricCheckStmt);
+            $matricCheckResult = mysqli_stmt_get_result($matricCheckStmt);
+
+            if (mysqli_num_rows($matricCheckResult) > 0) {
+                throw new Exception("Matric number already exists. Please use a different one.");
+            }
+
             $updateQuery = "UPDATE student SET name=?, matricNumber=?, level=?, cgpa=?, email=?";
             $params = [$newName, $newMatric, $newLevel, $newCGPA, $newEmail];
-
         } elseif ($role === "lecturer") {
             $newName = mysqli_real_escape_string($connection, trim($_POST['name']));
             $updateQuery = "UPDATE lecturer SET name=?, email=?";
             $params = [$newName, $newEmail];
-
         } elseif ($role === "admin") {
             $updateQuery = "UPDATE admin SET email=?";
             $params = [$newEmail];
@@ -75,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($newPassword) {
             $updateQuery .= ", password=?";
-            $params[] = $newPassword;
+            $params[] = $hashedPassword;
         }
 
         $updateQuery .= " WHERE email=?";
@@ -86,7 +108,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if (mysqli_stmt_execute($stmt)) {
             $_SESSION['email'] = $newEmail;
-            $message = "Information updated successfully!";
+            
+            // Redirect based on role
+            if ($role === "student") {
+                header("Location: student.php");
+            } elseif ($role === "lecturer") {
+                header("Location: lecturer.php");
+            } elseif ($role === "admin") {
+                header("Location: dashboard.php");
+            }
+            exit();
         } else {
             throw new Exception("Error updating information: " . mysqli_error($connection));
         }
@@ -94,6 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $message = $e->getMessage();
     }
 }
+
 ?>
 
 <div class="w-full flex justify-center items-center min-h-screen bg-gray-100">
@@ -144,8 +176,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" class="w-full border rounded p-2" required>
             </div>
             <div class="mb-3">
-                <label class="block mb-1">New Password (Leave blank to keep current)</label>
+                <label class="block mb-1">New Password (Min 6 characters)</label>
                 <input type="password" name="password" class="w-full border rounded p-2">
+            </div>
+            <div class="mb-3">
+                <label class="block mb-1">Confirm Password</label>
+                <input type="password" name="confirm_password" class="w-full border rounded p-2">
             </div>
             <button type="submit" class="w-full bg-green-600 text-white p-2 rounded">Update</button>
         </form>

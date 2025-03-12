@@ -8,6 +8,12 @@
   <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
     <h2 class="text-xl font-bold mb-4 text-center">Register</h2>
 
+     <!-- Error Message Display -->
+     <?php if (!empty($_SESSION['error'])): ?>
+      <p class="text-red-500 text-center mb-4"><?php echo $_SESSION['error']; ?></p>
+      <?php unset($_SESSION['error']); // Clear error after displaying ?>
+    <?php endif; ?>
+
     <div class="mb-4">
       <label class="block mb-1 text-center">Register as:</label>
       <select id="roleSelect" class="w-full border rounded p-2">
