@@ -2,17 +2,54 @@
 include('header.php');
 include_once('../backend/config.php');
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
+
+require '../backend/libs/PHPMailer/Exception.php';
+require '../backend/libs/PHPMailer/PHPMailer.php';
+require '../backend/libs/PHPMailer/SMTP.php';
+
 // Ensure only admin can access
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../index.php");
     exit();
 }
 
-// Fetch students ranked by CGPA
-global $connection;
-// Fetch students and lecturers
-$students = mysqli_query($connection, "SELECT * FROM student ORDER BY cgpa DESC");
-$lecturers = mysqli_query($connection, "SELECT * FROM lecturer ORDER BY rank DESC");
+    // Fetch students ranked by CGPA
+    global $connection;
+    // Fetch students and lecturers
+    $students = mysqli_query($connection, "SELECT * FROM student ORDER BY cgpa DESC");
+    $lecturers = mysqli_query($connection, "SELECT * FROM lecturer ORDER BY rank DESC");
+
+
+    
+// Function to send email notification to students
+function sendEmailNotification($studentEmail, $studentName, $lecturerName, $lecturerEmail) {
+    $mail = new PHPMailer(true);
+    try {
+        // SMTP Configuration
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com'; // Change if using another provider
+        $mail->SMTPAuth = true;
+        $mail->Username = 'noreplycsc415grp3@gmail.com'; // Use your email
+        $mail->Password = 'tsqo vzst jmpa zblp'; // Use your app password (not direct password)
+        $mail->SMTPSecure =  PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465; // Use 465 for SSL
+
+        // Email Details
+        $mail->setFrom('no-reply@csc415grp3.wuaze.com', 'Student Assignment System');
+        $mail->addAddress($studentEmail, $studentName);
+        $mail->Subject = "Supervisor Assignment Notification";
+        $mail->Body = "Dear $studentName,\n\nYou have been assigned a supervisor.\n\nSupervisor: $lecturerName\nEmail: $lecturerEmail\n\nBest regards,\nProject Student Assignment System";
+
+        // Send Email
+        $mail->send();
+            
+    } catch (Exception $e) {
+        echo "Mailer Error: " . $mail->ErrorInfo;
+    }
+}
 
 
 // Check if the assignment button was clicked
@@ -21,39 +58,147 @@ if (isset($_POST['run_assignment'])) {
     $assignmentMessage = "Assignment completed successfully!";
 }
 
-// Fetch students and lecturers
-$students = mysqli_query($connection, "SELECT * FROM student ORDER BY cgpa DESC");
-$lecturers = mysqli_query($connection, "SELECT * FROM lecturer ORDER BY rank DESC");
-
 function runAssignmentAlgorithm() {
+  
     global $connection;
-
-    $students = mysqli_query($connection, "SELECT * FROM student ORDER BY cgpa DESC");
-    $lecturers = mysqli_query($connection, "SELECT * FROM lecturer ORDER BY rank DESC");
-
-    $lecturers_array = [];
-    while ($lecturer = mysqli_fetch_assoc($lecturers)) {
-        $lecturers_array[] = $lecturer;
+    // Fetch students sorted by CGPA in descending order
+    $students_query = mysqli_query($connection, "SELECT * FROM student ORDER BY cgpa DESC");
+    $students = [];
+    while ($student = mysqli_fetch_assoc($students_query)) {
+        $students[] = $student;
     }
 
-    $total_lecturers = count($lecturers_array);
+    // Fetch lecturers sorted by rank in descending order
+    $lecturers_query = mysqli_query($connection, "SELECT * FROM lecturer ORDER BY rank DESC");
+    $lecturers = [];
+    while ($lecturer = mysqli_fetch_assoc($lecturers_query)) {
+        $lecturers[] = $lecturer;
+    }
+
+    $total_lecturers = count($lecturers);
     if ($total_lecturers === 0) {
-        echo "<p class='text-red-600 text-center'>No lecturers available for assignment.</p>";
-        return;
+        echo "No lecturers available for assignment.";
+        exit();
     }
 
-    $index = 0;
-    while ($student = mysqli_fetch_assoc($students)) {
-        $lecturer = $lecturers_array[$index % $total_lecturers];
+    $index = 0; // Track lecturer index
+
+    foreach ($students as $student) {
+        $lecturer = $lecturers[$index % $total_lecturers]; // Assign based on round-robin with sorted ranking
         $supervisorID = $lecturer['id'];
         $matricNumber = $student['matricNumber'];
 
+        // Assign student to lecturer
         $updateQuery = "UPDATE student SET supervisorID = '$supervisorID' WHERE matricNumber = '$matricNumber'";
         mysqli_query($connection, $updateQuery);
 
-        $index++;
+        $index++; // Move to the next lecturer in a cyclic manner
+    }
+
+    echo "Assignment completed successfully.";
+}
+
+// Check if the email button was clicked
+if (isset($_POST['send_assignment_emails'])) {
+    sendAssignmentEmailsToStudents();
+    sendAssignmentEmailsToLecturers();
+    $emailMessage = "Emails sent successfully!";
+}
+
+
+ 
+function sendAssignmentEmailsToStudents() {
+    global $connection;
+
+    // Fetch all assigned students and their supervisors
+    $query = "SELECT s.name AS student_name, s.email AS student_email, 
+                     l.name AS lecturer_name, l.email AS lecturer_email 
+              FROM student s
+              JOIN lecturer l ON s.supervisorID = l.id";
+
+    $result = mysqli_query($connection, $query);
+
+    while ($row = mysqli_fetch_assoc($result)) {
+        sendEmailNotification($row['student_email'], $row['student_name'], $row['lecturer_name'], $row['lecturer_email']);
+    }
+
+    echo "All assignment emails have been sent to students. <br>";
+}
+
+function sendAssignmentEmailsToLecturers() {
+    global $connection;
+
+    // Fetch all assigned students grouped by their lecturers
+    $query = "SELECT l.name AS lecturer_name, l.email AS lecturer_email, 
+                     s.name AS student_name, s.email AS student_email 
+              FROM student s
+              JOIN lecturer l ON s.supervisorID = l.id
+              ORDER BY l.id";
+
+    $result = mysqli_query($connection, $query);
+
+    $lecturerAssignments = [];
+
+    // Group students under their respective lecturers
+    while ($row = mysqli_fetch_assoc($result)) {
+        $lecturerEmail = $row['lecturer_email'];
+        if (!isset($lecturerAssignments[$lecturerEmail])) {
+            $lecturerAssignments[$lecturerEmail] = [
+                'lecturer_name' => $row['lecturer_name'],
+                'students' => []
+            ];
+        }
+        $lecturerAssignments[$lecturerEmail]['students'][] = [
+            'name' => $row['student_name'],
+            'email' => $row['student_email']
+        ];
+    }
+
+    // Send email to each lecturer with their assigned students
+    foreach ($lecturerAssignments as $email => $details) {
+        sendLecturerNotification($email, $details['lecturer_name'], $details['students']);
+    }
+
+    echo "All assignment emails have been sent to lecturers. <br>";
+}
+
+// Function to send an email notification to the lecturer
+function sendLecturerNotification($lecturerEmail, $lecturerName, $students) {
+    $mail = new PHPMailer(true);
+
+    try {
+        // SMTP Configuration
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = SMTP_USER; // Store in config.php
+        $mail->Password = SMTP_PASS; // Store in config.php
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465;
+
+        // Email Setup
+        $mail->setFrom('no-reply@csc415grp3.wuaze.com', 'Student Assignment System');
+        $mail->addAddress($lecturerEmail, $lecturerName);
+        $mail->Subject = "List of Assigned Students";
+
+        // Construct the email body
+        $message = "Dear $lecturerName,\n\nYou have been assigned the following students:\n\n";
+        foreach ($students as $student) {
+            $message .= "- {$student['name']} ({$student['email']})\n";
+        }
+        $message .= "\nPlease reach out to your assigned students accordingly.\n\nBest regards,\nUniversity Admin Team";
+
+        $mail->Body = $message;
+
+        // Send Email
+        $mail->send();
+
+    } catch (Exception $e) {
+        echo "Mailer Error: " . $mail->ErrorInfo;
     }
 }
+
+
 
 ?>
 <div class="w-full p-6">
@@ -247,6 +392,25 @@ $assignments = mysqli_query($connection, $query);
             <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded w-full md:w-auto mt-3 md:mt-0">Export as Excel</button>
         </form>
     </div>
+
+    <!-- Send Assignment Emails Button -->
+<div class="mb-6 flex flex-col items-center md:items-start mt-8">
+    <h3 class="text-xl font-semibold mb-4">Send Assignment Emails</h3>
+    <form action="dashboard.php" method="POST">
+        <input type="hidden" name="send_assignment_emails" value="true">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded w-full md:w-auto">
+            Send Emails
+        </button>
+    </form>
+    <?php if (isset($emailMessage)) : ?>
+        <p class="text-green-600 mt-2"><?= $emailMessage ?></p>
+    <?php endif; ?>
+</div>
+
+<?php
+
+?>
+
 </div>
 
 </div>

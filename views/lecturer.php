@@ -48,7 +48,8 @@ if ($stmt = mysqli_prepare($connection, $query)) {
         </tbody>
       </table>
     <?php else: ?>
-      <p class="text-red-600">No students assigned yet.</p>
+      <p>You will receive an email notification once you have been assigned to students. Please check your inbox, including your spam folder.</p>
+        <span class="text-red-600">No students assigned yet.</span>
     <?php endif; ?>
   </div>
 </div>

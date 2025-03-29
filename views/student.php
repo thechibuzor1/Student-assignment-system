@@ -40,6 +40,7 @@ if ($supervisorID) {
       <?php if ($supervisorID && $lecturerName): ?>
         Supervisor: <strong><?php echo htmlspecialchars($lecturerName); ?></strong>
       <?php else: ?>
+        <p>You will receive an email notification once you have been assigned a supervisor. Please check your inbox, including your spam folder.</p>
         <span class="text-red-600">You have not been assigned a supervisor yet.</span>
       <?php endif; ?>
     </p>
