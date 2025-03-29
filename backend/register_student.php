@@ -1,5 +1,6 @@
 <?php
 include_once('config.php');
+include_once('../views/dashboard.php');
 session_start(); // Start session to store errors
 
 $_SESSION['error'] = ""; // Clear previous errors
@@ -51,6 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
     }
+    runAssignmentAlgorithm();
     header("Location: ../views/register.php"); // Redirect back to form to show error
     exit();
 }
