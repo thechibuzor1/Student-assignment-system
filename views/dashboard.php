@@ -32,8 +32,8 @@ function sendEmailNotification($studentEmail, $studentName, $lecturerName, $lect
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com'; // Change if using another provider
         $mail->SMTPAuth = true;
-        $mail->Username = 'noreplycsc415grp3@gmail.com'; // Use your email
-        $mail->Password = 'tsqo vzst jmpa zblp'; // Use your app password (not direct password)
+        $mail->Username = SMTP_USER; // Store in config.php
+        $mail->Password = SMTP_PASS; // Store in config.php
         $mail->SMTPSecure =  PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465; // Use 465 for SSL
 

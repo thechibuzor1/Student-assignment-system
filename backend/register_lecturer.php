@@ -1,5 +1,6 @@
 <?php
 include_once('config.php');
+include_once('../views/dashboard.php');
 session_start(); // Start session
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -67,6 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         echo "Database query error!";
     }
+    runAssignmentAlgorithm();
 }
 
 mysqli_close($connection);
