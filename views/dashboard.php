@@ -61,41 +61,86 @@ if (isset($_POST['run_assignment'])) {
 function runAssignmentAlgorithm() {
   
     global $connection;
-    // Fetch students sorted by CGPA in descending order
-    $students_query = mysqli_query($connection, "SELECT * FROM student ORDER BY cgpa DESC");
-    $students = [];
-    while ($student = mysqli_fetch_assoc($students_query)) {
-        $students[] = $student;
+
+    // Define student tiers and lecturer ranks
+    $tiers = [
+        5 => ['min' => 4.5, 'max' => 5.0],
+        4 => ['min' => 3.5, 'max' => 4.49],
+        3 => ['min' => 2.5, 'max' => 3.49],
+        2 => ['min' => 2.0, 'max' => 2.49],
+        1 => ['min' => 0.0, 'max' => 1.99]
+    ];
+
+    // Group students by tier
+    $studentsByTier = [];
+    foreach ($tiers as $tier => $range) {
+        $query = "SELECT matricNumber FROM student 
+                 WHERE cgpa BETWEEN {$range['min']} AND {$range['max']} 
+                 ORDER BY cgpa DESC";
+        $result = mysqli_query($connection, $query);
+        $studentsByTier[$tier] = mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
 
-    // Fetch lecturers sorted by rank in descending order
-    $lecturers_query = mysqli_query($connection, "SELECT * FROM lecturer ORDER BY rank DESC");
-    $lecturers = [];
-    while ($lecturer = mysqli_fetch_assoc($lecturers_query)) {
-        $lecturers[] = $lecturer;
+    // Group lecturers by rank tier
+    $lecturersByTier = [];
+    foreach ($tiers as $tier => $range) {
+        $query = "SELECT id FROM lecturer WHERE rank = $tier ORDER BY rank DESC";
+        $result = mysqli_query($connection, $query);
+        $lecturersByTier[$tier] = mysqli_fetch_all($result, MYSQLI_ASSOC);
     }
 
-    $total_lecturers = count($lecturers);
-    if ($total_lecturers === 0) {
-        echo "No lecturers available for assignment.";
-        exit();
+
+    foreach ($tiers as $tier => $range) {
+        $students = $studentsByTier[$tier];
+        if (empty($students)) continue;
+
+        $availableLecturers = $lecturersByTier[$tier];
+
+        if (empty($availableLecturers)) {
+            // Find replacement lecturers: higher tiers first, then lower tiers
+            $replacementLecturers = [];
+
+            // Higher tiers (ranks > current tier)
+            for ($t = $tier + 1; $t <= 5; $t++) {
+                if (!empty($lecturersByTier[$t])) {
+                    $replacementLecturers = array_merge($replacementLecturers, $lecturersByTier[$t]);
+                }
+            }
+
+            // Lower tiers (ranks < current tier)
+            for ($t = $tier - 1; $t >= 1; $t--) {
+                if (!empty($lecturersByTier[$t])) {
+                    $replacementLecturers = array_merge($replacementLecturers, $lecturersByTier[$t]);
+                }
+            }
+
+            // Fallback to all lecturers if no replacements found
+            if (empty($replacementLecturers)) {
+                foreach ($lecturersByTier as $lt) {
+                    $replacementLecturers = array_merge($replacementLecturers, $lt);
+                }
+            }
+
+            $availableLecturers = $replacementLecturers;
+        }
+
+        if (!empty($availableLecturers)) {
+            $totalLecturers = count($availableLecturers);
+            $index = 0;
+            
+            foreach ($students as $student) {
+                $lecturer = $availableLecturers[$index % $totalLecturers];
+                $update = $connection->prepare("UPDATE student SET supervisorID = ? WHERE matricNumber = ?");
+                $update->bind_param('ss', $lecturer['id'], $student['matricNumber']);
+                $update->execute();
+                $index++;
+            }
+        } else {
+            echo "Warning: No lecturers available for tier $tier students\n";
+        }
     }
 
-    $index = 0; // Track lecturer index
-
-    foreach ($students as $student) {
-        $lecturer = $lecturers[$index % $total_lecturers]; // Assign based on round-robin with sorted ranking
-        $supervisorID = $lecturer['id'];
-        $matricNumber = $student['matricNumber'];
-
-        // Assign student to lecturer
-        $updateQuery = "UPDATE student SET supervisorID = '$supervisorID' WHERE matricNumber = '$matricNumber'";
-        mysqli_query($connection, $updateQuery);
-
-        $index++; // Move to the next lecturer in a cyclic manner
-    }
-
-    echo "Assignment completed successfully.";
+    echo "Assignment completed with tier fallback handling.";
 }
 
 // Check if the email button was clicked
