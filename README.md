@@ -1,4 +1,5 @@
 # Project Assignment System
+# DEMO: https://csc415grp3.wuaze.com/
 
 A web application for automating the assignment of students to project supervisors based on a ranking system. This project uses a PHP backend with a frontend built on HTML, Tailwind CSS (via CDN), and vanilla JavaScript.
 
